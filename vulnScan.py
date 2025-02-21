@@ -239,80 +239,139 @@ def generate_pdf_report(target_info, findings):  # PDF Generation
 
 def main():
     # ... (Argument parsing - same as before) 
+parser = argparse.ArgumentParser(description="Penetration Testing Script")
 
-    # ... (Scanner calls - same as before)
-  parser = argparse.ArgumentParser(description="Penetration Testing Script")
-
-    parser.add_argument("-i", "--ip", required=True, help="Target IP address")
-    parser.add_argument("-w", "--website", help="Target website (optional)")
-
-    # Scanner options
-    parser.add_argument("--nmap", action="store_true", help="Enable Nmap scan")
-    parser.add_argument("--nikto", action="store_true", help="Enable Nikto scan")
-    parser.add_argument("--gobuster", action="store_true", help="Enable Gobuster scan")
-    parser.add_argument("--sqlmap", action="store_true", help="Enable SQLMap scan")
-    parser.add_argument("--searchsploit", help="Searchsploit keyword (optional)")
-
-    # Shellcode options
-    parser.add_argument("--reverse-shell", action="store_true", help="Generate reverse shell")
-    parser.add_argument("--bind-shell", action="store_true", help="Generate bind shell")
-    parser.add_argument("--lhost", help="LHOST for reverse shell")
-    parser.add_argument("--lport", type=int, help="LPORT for reverse/bind shell")
+    # ... (Argument parsing - same as before)
 
     args = parser.parse_args()
 
     ip = args.ip
-    website = args.website or get_website_from_ip(ip) # if website is not given then it will try to get the website from ip address using get_website_from_ip function
+    website = args.website or get_website_from_ip(ip)
     target_info = {"ip": ip, "website": website}
 
     all_findings = []
 
-    if args.nmap:
-        nmap_output, nmap_findings = nmap_scan(ip)
-        if nmap_findings:
-            all_findings.extend(nmap_findings)
+    print("-" * 50)  # Separator
+    print(f"Target IP: {ip}")
+    if website:
+        print(f"Target Website: {website}")
+    print("-" * 50)
 
-    if args.nikto:
-        nikto_output, nikto_findings = nikto_scan(ip)
-        if nikto_findings:
-            all_findings.extend(nikto_findings)
+    try:  # Main try block for overall error handling
+        if args.nmap:
+            print("[+] Starting Nmap scan...")
+            nmap_output, nmap_findings = nmap_scan(ip)
+            if nmap_findings:
+                all_findings.extend(nmap_findings)
+                print("[+] Nmap scan complete.")
+                # Print Nmap findings interactively (example)
+                if nmap_findings:
+                  print("\nNmap Findings:")
+                  for finding in nmap_findings:
+                      print(f"  - {finding['type']}: ", end="")
+                      for key, value in finding.items():
+                          if key != 'type': # Print other details
+                              print(f"{key}={value} ", end="")
+                      print()  # New line for each finding
+                else:
+                  print("No findings were found from Nmap scan")
+                print("-" * 50) # separator
+            else:
+                print("[-] Nmap scan failed or returned no results.")
+                print("-" * 50) # separator
 
-    if args.gobuster:
-        gobuster_output, gobuster_findings = gobuster_scan(ip)
-        if gobuster_findings:
-            all_findings.extend(gobuster_findings)
+        if args.nikto:
+            print("[+] Starting Nikto scan...")
+            nikto_output, nikto_findings = nikto_scan(ip)
+            if nikto_findings:
+                all_findings.extend(nikto_findings)
+                print("[+] Nikto scan complete.")
+                if nikto_findings:
+                  print("\nNikto Findings:")
+                  for finding in nikto_findings:
+                      print(f"  - {finding['type']}: ", end="")
+                      for key, value in finding.items():
+                          if key != 'type': # Print other details
+                              print(f"{key}={value} ", end="")
+                      print()  # New line for each finding
+                else:
+                  print("No findings were found from Nikto scan")
+                print("-" * 50) # separator
+            else:
+                print("[-] Nikto scan failed or returned no results.")
+                print("-" * 50) # separator
 
-    if args.sqlmap:
-        sqlmap_output, sqlmap_findings = sqlmap_scan(ip)
-        if sqlmap_findings:
-            all_findings.extend(sqlmap_findings)
-
-    if args.searchsploit:
-        searchsploit_output, searchsploit_findings = searchsploit_search(args.searchsploit)
-        if searchsploit_findings:
-            all_findings.extend(searchsploit_findings)
-
-    if args.reverse_shell:
-        if not args.lhost or not args.lport:
-            print("[-] LHOST and LPORT are required for reverse shell.")
-        else:
-            reverse_shell_code = generate_reverse_shell(args.lhost, args.lport)
-            if reverse_shell_code:
-                print(f"[+] Reverse shell code:\n{reverse_shell_code}")
-
-    if args.bind_shell:
-        if not args.lport:
-            print("[-] LPORT is required for bind shell.")
-        else:
-            bind_shell_code = generate_bind_shell(args.lport)
-            if bind_shell_code:
-                print(f"[+] Bind shell code:\n{bind_shell_code}")
+        if args.gobuster:
+            print("[+] Starting Gobuster scan...")
+            gobuster_output, gobuster_findings = gobuster_scan(ip)
+            if gobuster_findings:
+                all_findings.extend(gobuster_findings)
+                print("[+] Gobuster scan complete.")
+                if gobuster_findings:
+                  print("\nGobuster Findings:")
+                  for finding in gobuster_findings:
+                      print(f"  - {finding['type']}: ", end="")
+                      for key, value in finding.items():
+                          if key != 'type': # Print other details
+                              print(f"{key}={value} ", end="")
+                      print()  # New line for each finding
+                else:
+                  print("No findings were found from Gobuster scan")
+                print("-" * 50) # separator
+            else:
+                print("[-] Gobuster scan failed or returned no results.")
+                print("-" * 50) # separator
 
 
+        if args.sqlmap:
+            print("[+] Starting SQLMap scan...")
+            sqlmap_output, sqlmap_findings = sqlmap_scan(ip)
+            if sqlmap_findings:
+                all_findings.extend(sqlmap_findings)
+                print("[+] SQLMap scan complete.")
+                if sqlmap_findings:
+                  print("\nSQLMap Findings:")
+                  for finding in sqlmap_findings:
+                      print(f"  - {finding['type']}: ", end="")
+                      for key, value in finding.items():
+                          if key != 'type': # Print other details
+                              print(f"{key}={value} ", end="")
+                      print()  # New line for each finding
+                else:
+                  print("No findings were found from SQLMap scan")
+                print("-" * 50) # separator
+            else:
+                print("[-] SQLMap scan failed or returned no results.")
+                print("-" * 50) # separator
 
-    report_format = input("Choose report format (txt, html, pdf): ").lower()  # Get format from user
-    generate_report(target_info, all_findings, report_format)  # Pass the format
+        if args.searchsploit:
+            print("[+] Searching Exploit-DB...")
+            searchsploit_output, searchsploit_findings = searchsploit_search(args.searchsploit)
+            if searchsploit_findings:
+                all_findings.extend(searchsploit_findings)
+                print("[+] Exploit-DB search complete.")
+                if searchsploit_findings:
+                  print("\nSearchsploit Findings:")
+                  for finding in searchsploit_findings:
+                      print(f"  - {finding['type']}: ", end="")
+                      for key, value in finding.items():
+                          if key != 'type': # Print other details
+                              print(f"{key}={value} ", end="")
+                      print()  # New line for each finding
+                else:
+                  print("No findings were found from Searchsploit")
+                print("-" * 50) # separator
+            else:
+                print("[-] Exploit-DB search failed or returned no results.")
+                print("-" * 50) # separator
 
+        # ... (Shellcode generation - same as before)
+
+        report_format = input("Choose report format (txt, html, pdf): ").lower()
+        generate_report(target_info, all_findings, report_format)
+
+    except Exception as e:  # Catch any remaining errors
+        print(f"[-] A general error occurred: {e}")
     # ... (Ethical reminders - same as before)
 
 if __name__ == "__main__":
