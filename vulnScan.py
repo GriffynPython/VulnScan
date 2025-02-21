@@ -134,6 +134,60 @@ conn.close();
 """
     return shellcode
 
+# --- Cracking Modules ---
+
+def hydra_crack(ip, username_list, password_list, service="ssh"):  # Added service parameter
+    try:
+        print(f"[+] Running Hydra crack against {ip} ({service})...")
+
+        # Construct Hydra command (example - adjust as needed)
+        hydra_cmd = f"hydra -L {username_list} -P {password_list} {ip} {service}"  # Example command
+
+        hydra_output = subprocess.run(shlex.split(hydra_cmd), capture_output=True, text=True, check=True).stdout
+        hydra_findings = []
+
+        # Parse Hydra output (example - improve as needed)
+        for line in hydra_output.splitlines():
+            if "login:" in line:
+                creds = line.split("login:")[1].strip()
+                try: # Handle potential split errors
+                    username, password = creds.split("password:")  # Adjust split if needed
+                    hydra_findings.append({"type": "hydra_credentials_found", "username": username.strip(), "password": password.strip(), "service": service})
+                except ValueError:
+                    print(f"Warning: Could not parse Hydra credentials from line: {line}")
+
+
+        return hydra_output, hydra_findings
+
+    except subprocess.CalledProcessError as e:
+        print(f"[-] Hydra crack error: {e}")
+        return None, []
+    except Exception as e:
+        print(f"[-] Hydra crack error: {e}")
+        return None, []
+
+
+def john_the_ripper_crack(hash_file, wordlist):
+    try:
+        print(f"[+] Running John the Ripper crack against {hash_file}...")
+        john_cmd = f"john --wordlist={wordlist} {hash_file}"  # Customize John command
+        john_output = subprocess.run(shlex.split(john_cmd), capture_output=True, text=True, check=True).stdout
+
+        john_findings = []
+        # Parse John output (example - improve as needed)
+        for line in john_output.splitlines():
+            if ":" in line:  # Check for cracked password
+                user, password = line.split(":")
+                john_findings.append({"type": "john_password_cracked", "user": user.strip(), "password": password.strip()})
+        return john_output, john_findings
+
+    except subprocess.CalledProcessError as e:
+        print(f"[-] John the Ripper error: {e}")
+        return None, []
+    except Exception as e:
+        print(f"[-] John the Ripper error: {e}")
+        return None, []
+
 # --- Reporting Module ---
 
 def generate_report(target_info, findings, output_format="txt"):  # Add format option
@@ -239,9 +293,22 @@ def generate_pdf_report(target_info, findings):  # PDF Generation
 
 def main():
     # ... (Argument parsing - same as before) 
-parser = argparse.ArgumentParser(description="Penetration Testing Script")
+    parser.add_argument("-i", "--ip", required=True, help="Target IP address")
+    parser.add_argument("-w", "--website", help="Target website (optional)")
+    parser.add_argument("--nmap", action="store_true", help="Enable Nmap scan")
+    parser.add_argument("--nikto", action="store_true", help="Enable Nikto scan")
+    parser.add_argument("--gobuster", action="store_true", help="Enable Gobuster scan")
+    parser.add_argument("--sqlmap", action="store_true", help="Enable SQLMap scan")
+    parser.add_argument("--searchsploit", help="Searchsploit keyword (optional)")
 
-    # ... (Argument parsing - same as before)
+    # Cracking options
+    parser.add_argument("--hydra", action="store_true", help="Enable Hydra cracking")
+    parser.add_argument("--john", help="Hash file for John the Ripper")
+    parser.add_argument("--aircrack", help="Capture file (.cap or .pcap) for Aircrack-ng")
+    parser.add_argument("--wordlist", help="Wordlist file for Hydra/John/Aircrack-ng")
+    parser.add_argument("--service", default="ssh", help="Service for Hydra (default: ssh)")
+
+    # ... (Other options - shellcode, etc.)
 
     args = parser.parse_args()
 
@@ -258,112 +325,61 @@ parser = argparse.ArgumentParser(description="Penetration Testing Script")
     print("-" * 50)
 
     try:  # Main try block for overall error handling
-        if args.nmap:
-            print("[+] Starting Nmap scan...")
-            nmap_output, nmap_findings = nmap_scan(ip)
-            if nmap_findings:
-                all_findings.extend(nmap_findings)
-                print("[+] Nmap scan complete.")
-                # Print Nmap findings interactively (example)
-                if nmap_findings:
-                  print("\nNmap Findings:")
-                  for finding in nmap_findings:
-                      print(f"  - {finding['type']}: ", end="")
-                      for key, value in finding.items():
-                          if key != 'type': # Print other details
-                              print(f"{key}={value} ", end="")
-                      print()  # New line for each finding
-                else:
-                  print("No findings were found from Nmap scan")
-                print("-" * 50) # separator
-            else:
-                print("[-] Nmap scan failed or returned no results.")
-                print("-" * 50) # separator
 
-        if args.nikto:
-            print("[+] Starting Nikto scan...")
-            nikto_output, nikto_findings = nikto_scan(ip)
-            if nikto_findings:
-                all_findings.extend(nikto_findings)
-                print("[+] Nikto scan complete.")
-                if nikto_findings:
-                  print("\nNikto Findings:")
-                  for finding in nikto_findings:
-                      print(f"  - {finding['type']}: ", end="")
-                      for key, value in finding.items():
-                          if key != 'type': # Print other details
-                              print(f"{key}={value} ", end="")
-                      print()  # New line for each finding
-                else:
-                  print("No findings were found from Nikto scan")
-                print("-" * 50) # separator
-            else:
-                print("[-] Nikto scan failed or returned no results.")
-                print("-" * 50) # separator
+        # --- Scans ---
+        scans = {  # Dictionary to store scan functions and their arguments
+            "nmap": {"func": nmap_scan, "args": (ip,), "enabled": args.nmap},
+            "nikto": {"func": nikto_scan, "args": (ip,), "enabled": args.nikto},
+            "gobuster": {"func": gobuster_scan, "args": (ip,), "enabled": args.gobuster},
+            "sqlmap": {"func": sqlmap_scan, "args": (ip,), "enabled": args.sqlmap},
+            "searchsploit": {"func": searchsploit_search, "args": (args.searchsploit,), "enabled": args.searchsploit}, # Pass keyword
+        }
 
-        if args.gobuster:
-            print("[+] Starting Gobuster scan...")
-            gobuster_output, gobuster_findings = gobuster_scan(ip)
-            if gobuster_findings:
-                all_findings.extend(gobuster_findings)
-                print("[+] Gobuster scan complete.")
-                if gobuster_findings:
-                  print("\nGobuster Findings:")
-                  for finding in gobuster_findings:
-                      print(f"  - {finding['type']}: ", end="")
-                      for key, value in finding.items():
-                          if key != 'type': # Print other details
-                              print(f"{key}={value} ", end="")
-                      print()  # New line for each finding
-                else:
-                  print("No findings were found from Gobuster scan")
-                print("-" * 50) # separator
-            else:
-                print("[-] Gobuster scan failed or returned no results.")
-                print("-" * 50) # separator
+        for scan_name, scan_data in scans.items():
+            if scan_data["enabled"]:
+                print(f"[+] Starting {scan_name}...")
+                output, findings = scan_data["func"](*scan_data["args"]) # Call the function with its arguments
 
-
-        if args.sqlmap:
-            print("[+] Starting SQLMap scan...")
-            sqlmap_output, sqlmap_findings = sqlmap_scan(ip)
-            if sqlmap_findings:
-                all_findings.extend(sqlmap_findings)
-                print("[+] SQLMap scan complete.")
-                if sqlmap_findings:
-                  print("\nSQLMap Findings:")
-                  for finding in sqlmap_findings:
-                      print(f"  - {finding['type']}: ", end="")
-                      for key, value in finding.items():
-                          if key != 'type': # Print other details
-                              print(f"{key}={value} ", end="")
-                      print()  # New line for each finding
+                if findings:
+                    all_findings.extend(findings)
+                    print(f"[+] {scan_name} complete.")
+                    print(f"\n{scan_name.capitalize()} Findings:") # Nicer formatting
+                    for finding in findings:
+                        print(f"  - {finding['type']}: ", end="")
+                        for key, value in finding.items():
+                            if key != 'type':
+                                print(f"{key}={value} ", end="")
+                        print()
                 else:
-                  print("No findings were found from SQLMap scan")
-                print("-" * 50) # separator
-            else:
-                print("[-] SQLMap scan failed or returned no results.")
-                print("-" * 50) # separator
+                    print(f"[-] {scan_name} scan failed or returned no results.")
+                print("-" * 50)
 
-        if args.searchsploit:
-            print("[+] Searching Exploit-DB...")
-            searchsploit_output, searchsploit_findings = searchsploit_search(args.searchsploit)
-            if searchsploit_findings:
-                all_findings.extend(searchsploit_findings)
-                print("[+] Exploit-DB search complete.")
-                if searchsploit_findings:
-                  print("\nSearchsploit Findings:")
-                  for finding in searchsploit_findings:
-                      print(f"  - {finding['type']}: ", end="")
-                      for key, value in finding.items():
-                          if key != 'type': # Print other details
-                              print(f"{key}={value} ", end="")
-                      print()  # New line for each finding
+        # --- Cracking ---
+        cracks = {
+            "hydra": {"func": hydra_crack, "args": (ip, args.wordlist, args.wordlist, args.service), "enabled": args.hydra and args.wordlist},
+            "john": {"func": john_the_ripper_crack, "args": (args.john, args.wordlist), "enabled": args.john and args.wordlist},
+            "aircrack": {"func": aircrack_ng_crack, "args": (args.aircrack, args.wordlist), "enabled": args.aircrack and args.wordlist},
+        }
+
+        for crack_name, crack_data in cracks.items():
+            if crack_data["enabled"]:
+                print(f"[+] Starting {crack_name}...")
+                output, findings = crack_data["func"](*crack_data["args"])
+
+                if findings:
+                    all_findings.extend(findings)
+                    print(f"[+] {crack_name} complete.")
+                    print(f"\n{crack_name.capitalize()} Findings:")
+                    for finding in findings:
+                        print(f"  - {finding['type']}: ", end="")
+                        for key, value in finding.items():
+                            if key != 'type':
+                                print(f"{key}={value} ", end="")
+                        print()
                 else:
-                  print("No findings were found from Searchsploit")
-                print("-" * 50) # separator
-            else:
-                print("[-] Exploit-DB search failed or returned no results.")
-                print("-" * 50) # separator
+                    print(f"[-] {crack_name} failed or returned no results.")
+                print("-" * 50)
+
 
         # ... (Shellcode generation - same as before)
 
