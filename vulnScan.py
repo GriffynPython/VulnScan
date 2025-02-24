@@ -188,7 +188,15 @@ def john_the_ripper_crack(hash_file, wordlist):
 # --- Improved Argument Parsing ---
 def setup_arguments(parser):
     tools = {
-        # ... (same as before)
+      "nmap": {"func": nmap_scan, "args": [], "enabled": False},  # nmap_scan function
+        "nikto": {"func": nikto_scan, "args": [], "enabled": False},  # nikto_scan function
+        "gobuster": {"func": gobuster_scan, "args": [], "enabled": False},  # gobuster_scan
+        "sqlmap": {"func": sqlmap_scan, "args": [], "enabled": False},  # sqlmap_scan
+        "searchsploit": {"func": searchsploit_search, "args": [], "enabled": False},  # searchsploit_search
+        "hydra": {"func": hydra_crack, "args": [], "enabled": False},  # hydra_crack
+        "john": {"func": john_the_ripper_crack, "args": [], "enabled": False},  # john_the_ripper_crack
+        "aircrack": {"func": aircrack_crack, "args": [], "enabled": False},  # aircrack_crack
+        # ... Add more tools as needed
     }
 
     for tool_name, tool_data in tools.items():
@@ -385,6 +393,24 @@ def main():
     for tool_name, tool_data in tools.items():
         if getattr(args, tool_name):
             tools[tool_name]["enabled"] = True
+
+            if tool_name == "nmap":
+                tools[tool_name]["args"] = [args.ip] # Example: Nmap takes the IP address as an argument
+            elif tool_name == "nikto":
+                tools[tool_name]["args"] = [args.ip] # Example: Nikto takes the IP address as an argument
+            elif tool_name == "gobuster":
+                tools[tool_name]["args"] = [args.ip] # Example: Gobuster takes the IP address as an argument
+            elif tool_name == "sqlmap":
+                tools[tool_name]["args"] = [args.ip] # Example: SQLMap takes the IP address as an argument
+            elif tool_name == "searchsploit":
+                tools[tool_name]["args"] = [getattr(args, tool_name)]  # Keyword for searchsploit
+            elif tool_name == "hydra":
+                tools[tool_name]["args"] = [args.ip, args.wordlist]  # ip and wordlist
+            elif tool_name == "john":
+                tools[tool_name]["args"] = [getattr(args, tool_name), args.wordlist]  # hash file and wordlist
+            elif tool_name == "aircrack":
+                tools[tool_name]["args"] = [getattr(args, tool_name)]  # capture file
+            # ... Add arguments for other tools
             # ... (Set arguments based on tool - same as before)
 
     # --- Concurrent Tool Execution ---
