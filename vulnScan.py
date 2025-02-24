@@ -22,8 +22,167 @@ logging.basicConfig(filename="vulnscan.log", level=logging.INFO,
 # --- Banner Display ---
 def display_banner():
     # ... (same as before)
+  banner = f"""
+    ███████  ██████  ███    ███ ███████ ███████ ███████ 
+    ██       ██    ██ ████  ████ ██      ██      ██      
+    ███████  ███████ ██ ██  ██ ███████ ███████ ███████ 
+          ██ ██    ██ ██  ██ ██ ██           ██      ██      
+    ███████  ██    ██ ██   ████ ███████ ███████ ███████ 
+                                                            
+        {Fore.GREEN}VulnScan{Style.RESET_ALL} - Automated Penetration Testing Tool
+              Version 1.0 (Example)
+        Author: {Fore.BLUE}Aarav Saklani{Style.RESET_ALL} (Example)
+    """  # Customize your banner
+    print(banner)
+    print("-" * 50)  # Separator
 
 # ... (Scanner and Cracking modules - same as before - improve parsing as needed) ...
+def nmap_scan(ip):
+    try:
+        print(f"[+] Running Nmap scan against {ip}...")
+        nmap_output = subprocess.run(shlex.split(f"nmap -A -T4 {ip}"), capture_output=True, text=True).stdout
+        # (Improve parsing as needed - Example below)
+        nmap_findings = []
+        for line in nmap_output.splitlines():
+            if "open" in line and "tcp" in line:  # Example: Find open TCP ports
+                port = line.split("/")[0]
+                nmap_findings.append({"type": "open_tcp_port", "port": port})
+        return nmap_output, nmap_findings  # Return raw output and parsed findings
+
+    except Exception as e:
+        print(f"[-] Nmap scan error: {e}")
+        return None, []
+
+def nikto_scan(ip):
+    try:
+        print(f"[+] Running Nikto scan against {ip}...")
+        nikto_output = subprocess.run(shlex.split(f"nikto -h {ip}"), capture_output=True, text=True).stdout
+        # (Improve parsing as needed)
+        nikto_findings = []
+        for line in nikto_output.splitlines():
+            if "+" in line and "Vulnerability" in line: # Example: Check for vulnerability findings
+                vulnerability = line.split("+")[1].strip()
+                nikto_findings.append({"type": "nikto_vulnerability", "description": vulnerability})
+        return nikto_output, nikto_findings
+    except Exception as e:
+        print(f"[-] Nikto scan error: {e}")
+        return None, []
+
+""" ... (Add other scanner modules - gobuster, etc.) ..."""
+def gobuster_scan(ip):
+    try:
+        print(f"[+] Running Gobuster scan against {ip}...")
+        gobuster_output = subprocess.run(
+            shlex.split(f"gobuster dir -u http://{ip} -w /usr/share/wordlists/dirb/common.txt"),
+            capture_output=True, text=True).stdout
+
+        gobuster_findings = []
+        for line in gobuster_output.splitlines():
+            if "Status:" in line: # Check for directories found
+                directory = line.split(" ")[0]
+                status_code = line.split(" ")[2].replace("[","").replace("]","")
+                gobuster_findings.append({"type": "directory_found", "directory": directory, "status_code": status_code})
+        return gobuster_output, gobuster_findings
+    except Exception as e:
+        print(f"[-] Gobuster scan error: {e}")
+        return None, []
+
+def sqlmap_scan(ip):
+    try:
+        print(f"[+] Running SQLMap scan against {ip}...")
+
+        # Improved SQLMap command (add --batch and other options as needed)
+        sqlmap_output = subprocess.run(
+            shlex.split(f"sqlmap -u http://{ip} --batch --dbs --level=1 --risk=1"),  # Adjust level/risk as needed
+            capture_output=True, text=True).stdout
+
+        sqlmap_findings = []
+        if "available databases" in sqlmap_output:  # Look for databases
+            databases_match = re.search(r"available databases(.*?)\[\d+\]", sqlmap_output, re.DOTALL)
+            if databases_match:
+                databases = databases_match.group(1).strip().split("\n")
+                for db in databases:
+                    sqlmap_findings.append({"type": "sql_database_found", "database": db.strip()})
+        # Add more logic to extract other findings (tables, columns, etc.)
+
+        return sqlmap_output, sqlmap_findings
+
+    except Exception as e:
+        print(f"[-] SQLMap scan error: {e}")
+        return None, []
+
+def searchsploit_search(keyword):
+    try:
+        print(f"[+] Searching Exploit-DB for '{keyword}'...")
+        searchsploit_output = subprocess.run(
+            shlex.split(f"searchsploit {keyword}"), capture_output=True, text=True).stdout
+
+        searchsploit_findings = []
+        for line in searchsploit_output.splitlines():
+            if "|" in line and "EDB-ID" not in line and "DESCRIPTION" not in line: # Check for exploits
+                parts = line.split("|")
+                edb_id = parts[1].strip()
+                description = parts[2].strip()
+                searchsploit_findings.append({"type": "exploit_found", "edb_id": edb_id, "description": description})
+        return searchsploit_output, searchsploit_findings
+
+    except Exception as e:
+        print(f"[-] Searchsploit error: {e}")
+        return None, []
+def hydra_crack(ip, username_list, password_list, service="ssh"):  # Added service parameter
+    try:
+        print(f"[+] Running Hydra crack against {ip} ({service})...")
+
+        # Construct Hydra command (example - adjust as needed)
+        hydra_cmd = f"hydra -L {username_list} -P {password_list} {ip} {service}"  # Example command
+
+        hydra_output = subprocess.run(shlex.split(hydra_cmd), capture_output=True, text=True, check=True).stdout
+        hydra_findings = []
+
+        # Parse Hydra output (example - improve as needed)
+        for line in hydra_output.splitlines():
+            if "login:" in line:
+                creds = line.split("login:")[1].strip()
+                try: # Handle potential split errors
+                    username, password = creds.split("password:")  # Adjust split if needed
+                    hydra_findings.append({"type": "hydra_credentials_found", "username": username.strip(), "password": password.strip(), "service": service})
+                except ValueError:
+                    print(f"Warning: Could not parse Hydra credentials from line: {line}")
+
+
+        return hydra_output, hydra_findings
+
+    except subprocess.CalledProcessError as e:
+        print(f"[-] Hydra crack error: {e}")
+        return None, []
+    except Exception as e:
+        print(f"[-] Hydra crack error: {e}")
+        return None, []
+
+
+def john_the_ripper_crack(hash_file, wordlist):
+    try:
+        print(f"[+] Running John the Ripper crack against {hash_file}...")
+        john_cmd = f"john --wordlist={wordlist} {hash_file}"  # Customize John command
+        john_output = subprocess.run(shlex.split(john_cmd), capture_output=True, text=True, check=True).stdout
+
+        john_findings = []
+        # Parse John output (example - improve as needed)
+        for line in john_output.splitlines():
+            if ":" in line:  # Check for cracked password
+                user, password = line.split(":")
+                john_findings.append({"type": "john_password_cracked", "user": user.strip(), "password": password.strip()})
+        return john_output, john_findings
+
+    except subprocess.CalledProcessError as e:
+        print(f"[-] John the Ripper error: {e}")
+        return None, []
+    except Exception as e:
+        print(f"[-] John the Ripper error: {e}")
+        return None, []
+# --- Vulnerability Database Integration (Example - Requires API Key) ---
+# (Replace with actual API call and parsing)
+
 
 # --- Improved Argument Parsing ---
 def setup_arguments(parser):
