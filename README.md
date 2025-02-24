@@ -1,6 +1,7 @@
 # VulnScan: Automated Penetration Testing Tool
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)  [![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/) ## Description
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)  [![Python Version](https://img.shields.io/badge/python-3.7+-blue.svg)](https://www.python.org/downloads/) 
+## Description
 
 VulnScan is a Python-based automated penetration testing tool designed to streamline the process of identifying vulnerabilities in target systems. It integrates various popular open-source security tools, automating scans for common weaknesses and generating comprehensive reports in text, HTML, and PDF formats. VulnScan aims to simplify penetration testing tasks and provide a consolidated view of potential security risks.
 
