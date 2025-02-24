@@ -23,11 +23,12 @@ logging.basicConfig(filename="vulnscan.log", level=logging.INFO,
 def display_banner():
     # ... (same as before)
   banner = f"""
-    ███████  ██████  ███    ███ ███████ ███████ ███████ 
-    ██       ██    ██ ████  ████ ██      ██      ██      
-    ███████  ███████ ██ ██  ██ ███████ ███████ ███████ 
-          ██ ██    ██ ██  ██ ██ ██           ██      ██      
-    ███████  ██    ██ ██   ████ ███████ ███████ ███████ 
+    ____   ____    .__           _________                      
+\   \ /   /_ __|  |   ____  /   _____/ ____ _____    ____   
+ \   Y   /  |  \  |  /    \ \_____  \_/ ___\\__  \  /    \  
+  \     /|  |  /  |_|   |  \/        \  \___ / __ \|   |  \ 
+   \___/ |____/|____/___|  /_______  /\___  >____  /___|  / 
+                         \/        \/     \/     \/     \/  
                                                             
         {Fore.GREEN}VulnScan{Style.RESET_ALL} - Automated Penetration Testing Tool
               Version 1.0 (Example)
