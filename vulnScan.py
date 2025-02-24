@@ -230,9 +230,53 @@ def run_tool(tool_name, tool_data):
 # --- Reporting Module (Improved) ---
 def generate_report(target_info, findings, output_format="txt"):
     try:
-        # ... (same as before - improved HTML and PDF report generation - see below)
+        if output_format == "txt":
+            report_content = generate_text_report(target_info, findings)  # Call text report function
+            with open("pentest_report.txt", "w") as f:
+                f.write(report_content)
+            print("[+] Report generated as pentest_report.txt")
+
+        elif output_format == "html":
+            report_content = generate_html_report(target_info, findings)  # Call HTML report function
+            with open("pentest_report.html", "w") as f:
+                f.write(report_content)
+            print("[+] Report generated as pentest_report.html")
+
+        elif output_format == "pdf":
+            generate_pdf_report(target_info, findings)  # Call PDF report function (already handles file writing)
+
+        else:
+            logging.warning(f"Invalid report format: {output_format}")
+
     except Exception as e:
         logging.error(f"Report generation error: {e}")
+
+
+def generate_text_report(target_info, findings):  # New function for text reports
+    report_content = f"Penetration Testing Report - {datetime.datetime.now()}\n"
+    report_content += f"Target: {target_info['ip']} ({target_info['website'] or 'N/A'})\n\n"
+
+    if findings:
+        report_content += "Identified Vulnerabilities:\n"
+        for finding in findings:
+            report_content += f"  Type: {finding['type']}\n"  # Simplified for text report
+            for key, value in finding.items():  # Add other details
+                if key != 'type':
+                    report_content += f"    {key}: {value}\n"
+            report_content += "\n"
+
+    else:
+        report_content += "No vulnerabilities identified.\n"
+
+    report_content += "\nRecommendations:\n"  # Add recommendations
+    report_content += "- Perform manual verification of findings.\n"
+    report_content += "- Consult security best practices for remediation.\n"
+    report_content += "- Prioritize patching high-severity vulnerabilities.\n"
+    report_content += "- Use Metasploit (or other tools) for manual exploitation (if appropriate and with permission).\n"
+
+    return report_content
+
+# ... (generate_html_report and generate_pdf_report functions - same as before)
 
 
 def generate_html_report(target_info, findings):
