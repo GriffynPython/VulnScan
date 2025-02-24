@@ -10,6 +10,22 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, ListFlowabl
 from reportlab.lib.styles import getSampleStyleSheet
 from reportlab.lib.units import inch
 
+# --- Banner Display ---
+def display_banner():
+    banner = f"""
+    ███████  ██████  ███    ███ ███████ ███████ ███████ 
+    ██       ██    ██ ████  ████ ██      ██      ██      
+    ███████  ███████ ██ ██  ██ ███████ ███████ ███████ 
+          ██ ██    ██ ██  ██ ██ ██           ██      ██      
+    ███████  ██    ██ ██   ████ ███████ ███████ ███████ 
+                                                            
+        {Fore.GREEN}VulnScan{Style.RESET_ALL} - Automated Penetration Testing Tool
+              Version 0.1
+        Author: {Fore.BLUE}Aarav Saklani{Style.RESET_ALL} (Example)
+    """  # Customize your banner
+    print(banner)
+    print("-" * 50)  # Separator
+
 # ... (Scanner modules - same as before, improve parsing as needed) ...
 def nmap_scan(ip):
     try:
@@ -292,6 +308,7 @@ def generate_pdf_report(target_info, findings):  # PDF Generation
 # --- Main Function ---
 
 def main():
+    display_banner()
     # ... (Argument parsing - same as before) 
     parser.add_argument("-i", "--ip", required=True, help="Target IP address")
     parser.add_argument("-w", "--website", help="Target website (optional)")
