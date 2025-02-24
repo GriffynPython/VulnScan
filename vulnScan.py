@@ -400,8 +400,7 @@ def main():
                 all_findings.extend(findings)
 
     # --- Report Generation ---
-    generate_report(target_info, all_findings
-args.report_format)  # Generate the report
+    generate_report(target_info, all_findings, args.report_format)  # Generate the report
 
     print("[+] Penetration testing complete.")
 
