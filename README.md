@@ -21,7 +21,7 @@ VulnScan is a Python-based automated penetration testing tool designed to stream
 1.  **Clone the Repository:**
 
     ```bash
-    git clone [https://github.com/GriffynPython/VulnScan.git](https://www.google.com/search?q=https://github.com/GriffynPython/VulnScan.git)
+    git clone https://github.com/GriffynPython/VulnScan.git
     cd VulnScan
     ```
 
